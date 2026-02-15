@@ -1,34 +1,13 @@
 const keys = {
-	KeyW: false,
-	KeyA: false,
-	KeyS: false,
-	KeyD: false,
-	KeyC: false,
-	Tab: false,
-	KeyQ: false,
-	KeyE: false,
-	Digit1: false,
-	Digit2: false,
-	Digit3: false,
-	Digit4: false,
-	Digit5: false,
-	Digit6: false,
-	Digit7: false,
-	Digit8: false,
-	Digit9: false
+	KeyW: false, KeyA: false, KeyS: false, KeyD: false,
+	KeyC: false, Tab: false, KeyQ: false, KeyE: false,
+    KeyZ: false, KeyX: false, KeyV: false
 };
 
 const mouse = {
-	canvasX: null,
-	canvasY: null,
-	gridX: null,
-	gridY: null,
-	alignedX: null,
-	alignedY: null,
-	worldX: null,
-	worldY: null,
-	right: false,
-	left: false,
+	canvasX: null, canvasY: null, gridX: null, gridY: null,
+	alignedX: null, alignedY: null, worldX: null, worldY: null,
+	right: false, left: false,
 	calculateCoordinates: function () {
 		this.alignedX = this.gridX * tileSize;
 		this.alignedY = canvas.height - this.gridY * tileSize;
@@ -64,50 +43,83 @@ function teleportSwitch() {
 }
 
 let tpToggle = false;
-
 let firstTime = true;
+let lastPosition = [{}, {}];
 
-let lastPosition = [
-	{},
-	{}
-]
-
+// --- TECLADO ---
 window.addEventListener("keydown", function (event) {
-	if (keys.hasOwnProperty(event.code)) {
-		keys[event.code] = true;
+    // Si estamos escribiendo en el chat/consola, ignorar controles de juego
+    if (document.activeElement === document.getElementById('console-input') || 
+        document.activeElement === document.getElementById('inventory-search')) {
+        // Permitir cerrar inventario con E incluso si estamos escribiendo
+        if (event.code === 'KeyE' && document.activeElement === document.getElementById('inventory-search')) {
+             event.preventDefault();
+             if (typeof toggleInventory === 'function') toggleInventory();
+             return;
+        }
+        return; 
+    }
 
-		if (keys.Tab) {
-			teleportSwitch();
-			event.preventDefault();
-		}
+	if (keys.hasOwnProperty(event.code)) keys[event.code] = true;
 
-		if (keys.KeyC) {
-			eyedropper(mouse.worldX, mouse.worldY);
-		}
+    if (event.code === 'Tab') {
+        teleportSwitch();
+        event.preventDefault();
+    }
 
-		if (keys.KeyQ) {
-			shapeIndex = (shapeIndex - 1 + 7) % 7;
-		}
+    if ((event.ctrlKey || event.metaKey) && event.code === 'KeyZ') {
+        event.preventDefault();
+        historyManager.undo();
+    }
+    if ((event.ctrlKey || event.metaKey) && event.code === 'KeyY') {
+        event.preventDefault();
+        historyManager.redo();
+    }
 
-		if (keys.KeyE) {
-			shapeIndex = (shapeIndex + 1) % 7;
-		}
-		if (keys.Digit1) slotIndex = 0;
-		if (keys.Digit2) slotIndex = 1;
-		if (keys.Digit3) slotIndex = 2;
-		if (keys.Digit4) slotIndex = 3;
-		if (keys.Digit5) slotIndex = 4;
-		if (keys.Digit6) slotIndex = 5;
-		if (keys.Digit7) slotIndex = 6;
-		if (keys.Digit8) slotIndex = 7;
-		if (keys.Digit9) slotIndex = 8;
-	}
+    if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
+        event.preventDefault();
+        if (typeof copySelection === 'function') {
+            copySelection();
+        }
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.code === 'KeyV') {
+        event.preventDefault();
+        if (typeof activatePasteMode === 'function') {
+            activatePasteMode();
+        }
+    }
+
+    if (event.code === 'KeyZ' && !event.ctrlKey) {
+        if (typeof setSelectionPoint === 'function') setSelectionPoint(1, mouse.worldX, mouse.worldY);
+    }
+    if (event.code === 'KeyX') {
+        if (typeof setSelectionPoint === 'function') setSelectionPoint(2, mouse.worldX, mouse.worldY);
+    }
+    
+    if (event.code === 'KeyC' && !event.ctrlKey) {
+         eyedropper(mouse.worldX, mouse.worldY);
+    }
+
+    // --- NUEVO INVENTARIO ---
+    if (event.code === 'KeyE') {
+        // PREVENIMOS que la 'e' se escriba en el input
+        event.preventDefault(); 
+        if (typeof toggleInventory === 'function') toggleInventory();
+    }
+
+    // --- HOTBAR (Números) ---
+    if (event.code.startsWith('Digit')) {
+        let num = parseInt(event.code.charAt(5));
+        if (!isNaN(num) && num > 0) {
+            slotIndex = num - 1;
+            if (typeof updateHotbarSelection === 'function') updateHotbarSelection();
+        }
+    }
 });
 
 window.addEventListener("keyup", function (event) {
-	if (keys.hasOwnProperty(event.code)) {
-		keys[event.code] = false;
-	}
+	if (keys.hasOwnProperty(event.code)) keys[event.code] = false;
 });
 
 canvas.addEventListener("mousemove", (event) => {
@@ -115,26 +127,51 @@ canvas.addEventListener("mousemove", (event) => {
 	mouse.canvasY = canvas.height - event.offsetY;
 	mouse.gridX = Math.floor(mouse.canvasX / tileSize);
 	mouse.gridY = Math.floor(mouse.canvasY / tileSize);
+    mouse.calculateCoordinates(); 
+
+    if ((currentTool === 'select' || currentTool === 'lasso') && mouse.left) {
+        handleSelectionInput('move', mouse.worldX, mouse.worldY);
+    }
 })
 
 canvas.addEventListener("mousedown", function (event) {
-	if (event.button == 0) {
-		mouse.left = true;
-	}
-	if (event.button == 2) {
-		mouse.right = true;
-	}
+	if (event.button == 0) mouse.left = true;
+	if (event.button == 2) mouse.right = true;
+
+    if ((currentTool === 'select' || currentTool === 'lasso') && mouse.left) {
+        handleSelectionInput('start', mouse.worldX, mouse.worldY);
+    } 
+    else if (currentTool === 'paste' && mouse.left) {
+        performPaste(mouse.worldX, mouse.worldY);
+    }
+    else if (mouse.left || mouse.right) {
+        if (currentTool === 'bucket' && mouse.left) {
+            bucketFill(mouse.worldX, mouse.worldY);
+        } else if (currentTool !== 'eyedropper') {
+            historyManager.startAction();
+        }
+    }
 });
 
 window.addEventListener("mouseup", function (event) {
-	if (event.button == 0) {
-		mouse.left = false;
-	}
-	if (event.button == 2) {
-		mouse.right = false;
-	}
+    if ((currentTool === 'select' || currentTool === 'lasso') && mouse.left) {
+        handleSelectionInput('end', mouse.worldX, mouse.worldY);
+    }
+
+	if (event.button == 0) mouse.left = false;
+	if (event.button == 2) mouse.right = false;
+
+    if (currentTool !== 'eyedropper' && currentTool !== 'bucket' && currentTool !== 'select' && currentTool !== 'lasso' && currentTool !== 'paste') {
+        historyManager.commitAction();
+    }
 });
 
-canvas.addEventListener("contextmenu", function (event) {
-	event.preventDefault();
+canvas.addEventListener("mouseleave", function() {
+    if (mouse.left || mouse.right) {
+        if (currentTool !== 'select' && currentTool !== 'lasso') historyManager.commitAction();
+        mouse.left = false;
+        mouse.right = false;
+    }
 });
+
+canvas.addEventListener("contextmenu", e => e.preventDefault());
