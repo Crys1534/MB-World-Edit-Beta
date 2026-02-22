@@ -6,11 +6,165 @@
  <link rel="icon" href="favicon.ico" type="image/x-icon">
  <link rel="stylesheet" href="style.css">
  <title>MB World Edit</title>
+ <style>
+    /* --- ESTILOS GENERALES Y CORRECCIONES --- */
+    #inventory-modal .modal-content {
+        background: #C6C6C6; border: 2px solid #555; width: 700px; padding: 0;   
+        color: #000; display: flex; flex-direction: column; height: 550px; 
+    }
+    .inventory-layout { display: flex; flex-direction: column; flex: 1; overflow: hidden; padding: 10px; }
+    #inventory-tabs-sidebar { width: 100%; display: flex; flex-direction: row; gap: 5px; margin-top: 5px; padding-left: 5px; z-index: 10; }
+    .inv-tab-btn {
+        width: 40px; height: 40px; background: #8B8B8B; border: 2px solid #373737;
+        border-bottom-color: #FFF; cursor: pointer; display: flex; justify-content: center; align-items: center;
+    }
+    .inv-tab-btn.active {
+        background: #C6C6C6; border-color: #FFF; border-bottom: none; 
+        height: 45px; position: relative; margin-bottom: -2px; border-right: 2px solid #373737;
+    }
+    .inventory-main-area { flex: 1; display: flex; flex-direction: column; background: #C6C6C6; min-height: 0; }
+    .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding-right: 10px; }
+    #inventory-search {
+        width: 100%; padding: 8px; background: #333; color: white;
+        border: 2px solid #A0A0A0; font-family: monospace; margin-bottom: 0; 
+    }
+    #inventory-grid {
+        display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; overflow-y: auto;
+        background: #8B8B8B; padding: 5px; border: 2px solid #373737; border-top: 2px solid #373737; 
+        border-bottom-color: #FFF; border-right-color: #FFF; flex: 1; min-height: 0;
+    }
+    .inv-item {
+        width: 100%; aspect-ratio: 1; background: #8B8B8B; border: 1px solid transparent;
+        display: flex; justify-content: center; align-items: center; cursor: pointer;
+    }
+    .inv-item:hover { background: rgba(255, 255, 255, 0.2); border: 1px solid #FFF; }
+    #hotbar-container { display: flex; gap: 2px; background: #C6C6C6; padding: 4px; border: 2px solid #555; margin: 0 auto; }
+    .hotbar-slot {
+        width: 32px; height: 32px; border: 2px solid #8B8B8B; background: #8B8B8B;
+        display: flex; justify-content: center; align-items: center; cursor: pointer;
+    }
+    .hotbar-slot.active { border-color: #FFF; background: #A0A0A0; box-shadow: inset 0 0 4px rgba(0,0,0,0.5); }
+    #tab-insert.active { justify-content: left; }
+
+    /* --- OVERLAYS --- */
+    #coords-overlay { position: absolute; top: 15px; left: 85px; font-family: 'Consolas', monospace; font-size: 24px; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; pointer-events: none; z-index: 10; }
+    #selection-overlay { position: absolute; top: 45px; left: 85px; font-family: 'Consolas', monospace; font-size: 18px; font-weight: bold; color: #FFD700; text-shadow: 1px 1px 2px black; pointer-events: none; z-index: 10; display: none; }
+    #console-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(2px); }
+    .console-container { background: #2b2b2b; border: 2px solid #555; border-radius: 5px; padding: 20px; width: 300px; display: flex; flex-direction: column; gap: 10px; }
+    #console-suggestion { color: #888; font-family: monospace; font-size: 12px; margin-bottom: 5px; }
+    #console-input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: #0f0; font-family: 'Consolas', monospace; outline: none; }
+
+    /* --- ESTILOS DE ESTRUCTURAS --- */
+    .icon-btn:disabled, .icon-btn[disabled] { opacity: 0.4; cursor: not-allowed; filter: grayscale(100%); }
+
+    #structures-modal .modal-content {
+        width: 850px; height: 600px; background: #C6C6C6; border: 2px solid #555; padding: 0;
+        display: flex; flex-direction: row; overflow: hidden;
+    }
+    .struct-main { flex: 1; display: flex; flex-direction: column; padding: 10px; border-right: 2px solid #555; }
+    
+    .struct-tabs-container {
+        display: flex; justify-content: space-between; align-items: center; 
+        border-bottom: 2px solid #FFF; margin-bottom: 10px; background: #8B8B8B; padding-right: 5px;
+    }
+    .struct-tabs { display: flex; margin-bottom: -2px; }
+    .struct-tab {
+        padding: 8px 15px; background: #8B8B8B; border: 2px solid #373737; border-bottom: 2px solid #FFF;
+        cursor: pointer; font-weight: bold; color: #000;
+    }
+    .struct-tab.active {
+        background: #C6C6C6; border-bottom: none; margin-bottom: 0; z-index: 10;
+        border-top: 2px solid #FFF; border-left: 2px solid #FFF;
+    }
+    
+    .mini-btn { padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; border: 1px solid #333; color: white; display: flex; align-items: center; gap: 3px; text-transform: uppercase; }
+    .btn-import { background: #E67E22; border-color: #D35400; } .btn-import:hover { background: #F39C12; }
+    .btn-export { background: #3498DB; border-color: #2980B9; } .btn-export:hover { background: #5DADE2; }
+    .btn-reset { background: #C0392B; border-color: #922B21; } .btn-reset:hover { background: #E74C3C; }
+
+    #struct-subtabs { display: none; gap: 5px; margin-bottom: 10px; padding-left: 10px; background: #A0A0A0; padding: 5px; border: 1px solid #555; }
+    .struct-subtab { font-size: 12px; cursor: pointer; padding: 2px 8px; background: #777; color: #DDD; }
+    .struct-subtab.active { background: #FFF; color: #000; }
+
+    #structures-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto;
+        background: #8B8B8B; padding: 10px; border: 2px solid #373737; border-right-color: #FFF; border-bottom-color: #FFF; flex: 1;
+    }
+    .struct-item {
+        background: #555; border: 2px solid #333; aspect-ratio: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;
+    }
+    .struct-item:hover { background: #666; border-color: #FFF; }
+    .struct-name { font-size: 12px; text-align: center; color: white; padding: 0 5px; margin-top: 5px; }
+
+    /* SIDEBAR INFO */
+    .struct-sidebar { width: 250px; background: #B0B0B0; display: flex; flex-direction: column; padding: 15px; align-items: center; }
+    #struct-preview-canvas { width: 200px; height: 200px; background: #8B8B8B; border: 2px solid #373737; margin-bottom: 15px; image-rendering: pixelated; }
+    .struct-info { width: 100%; text-align: left; margin-bottom: 20px; }
+    .struct-info h3 { margin: 0 0 5px 0; font-size: 18px; color: #000; } 
+    .struct-info p { margin: 0; color: #000; font-size: 14px; font-weight: bold; } 
+    
+    /* BOTONES DE ESTRUCTURA */
+    .struct-actions-container { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+    .btn-load-struct { width: 100%; padding: 16px 0; font-size: 24px; background: #4CAF50; color: white; border: 2px solid #2E7D32; cursor: pointer; font-weight: bold; }
+    .btn-load-struct:hover { background: #66BB6A; }
+    .struct-actions-row { display: flex; flex-direction: row; gap: 5px; width: 100%; display: none; }
+    .btn-action-text { flex: 1; padding: 8px 0; cursor: pointer; font-weight: bold; color: white; border: 2px solid #555; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-edit-action { background: #29B6F6; border-color: #0288D1; color: black; }
+    .btn-edit-action:hover { background: #4FC3F7; }
+    .btn-delete-action { background: #C0392B; border-color: #922B21; color: white; }
+    .btn-delete-action:hover { background: #E74C3C; }
+
+    /* MODAL SAVE */
+    #save-structure-modal .modal-content { width: 500px; background: #C6C6C6; border: 2px solid #555; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+    #struct-save-preview { width: 460px; height: 295px; background: #8B8B8B; border: 2px solid #373737; margin: 0 auto; display: block; image-rendering: pixelated; }
+    .ribbon-btn-large.active { background-color: #a0a0a0; border: 2px inset #fff; box-shadow: inset 1px 1px 5px rgba(0,0,0,0.4); }
+    .save-form-row { display: flex; flex-direction: row; align-items: center; margin-bottom: 5px; }
+    .save-form-row label { width: 100px; text-align: right; font-size: 14px; font-weight: bold; color: #000; margin-right: 15px; }
+    .save-form-row input, .save-form-row select { flex: 1; padding: 5px; border: 2px solid #555; background: #FFF; font-family: inherit; }
+    .save-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+    .btn-confirm-save { background: #4CAF50; color: white; padding: 8px 20px; border: 2px solid #2E7D32; cursor: pointer; }
+    .btn-cancel { background: #d32f2f; color: white; padding: 8px 20px; border: 2px solid #b71c1c; cursor: pointer; }
+
+    /* --- ESTILO UNIFICADO PARA MODALES (Tema .struct-main) --- */
+    /* Selects legibles */
+    select, option { color: black !important; background-color: white; }
+
+    .mbw-standard-modal {
+        background: #C6C6C6;
+        border: 2px solid #555;
+        padding: 0; 
+        display: flex;
+        flex-direction: column;
+        color: black;
+        box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+    }
+
+    .mbw-modal-header {
+        display: flex; justify-content: space-between; align-items: center;
+        background: #8B8B8B; padding: 5px 10px; border-bottom: 2px solid #FFF;
+        border-right: 2px solid #FFF; border-top: 1px solid #373737; border-left: 1px solid #373737;
+        margin-bottom: 5px;
+    }
+
+    .mbw-modal-header h3 { margin: 0; color: #FFF; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+    .mbw-close-btn { cursor: pointer; font-weight: bold; color: #FFF; font-size: 16px; line-height: 1; }
+    .mbw-close-btn:hover { color: #FFD700; }
+    .mbw-modal-body { padding: 10px; flex: 1; overflow-y: auto; }
+
+    /* Ajuste Modal Edit Info */
+    #edit-info-modal .modal-content { background: #C6C6C6; border: 2px solid #555; width: 500px; height: 200px !important; min-height: auto; }
+    
+    .confirm-actions { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+    .btn-yes, .btn-confirm-save { padding: 4px 15px; font-size: 12px; }
+    .btn-no, .btn-cancel { padding: 4px 15px; font-size: 12px; }
+ </style>
 </head>
 <body>
  
  <div id="top-bar">
   <div class="left-group">
+  <img src="favicon.ico" class="app-icon" style= alt="App Icon">
    <button class="icon-btn" onclick="document.getElementById('file-input').click()">📂 Load World</button>
    <button class="icon-btn" onclick="fileManager.export()">💾 Save World</button>
    <button class="icon-btn" onclick="openModal('settings-modal')">⚙️ Configuration</button>
@@ -25,151 +179,434 @@
   </div>
  </div>
 
- <div id="ribbon">
+<div id="ribbon">
   <div class="tabs">
-   <button class="tab-btn disabled">Insert (Soon)</button>
-   <button class="tab-btn active" onclick="openTab('settings')">World Settings</button>
+   <button class="tab-btn active" onclick="openTab('insert')">Insert</button>
+   <button class="tab-btn" onclick="openTab('settings')">World Settings</button>
    <button class="tab-btn" onclick="openTab('view')">View</button>
   </div>
+  
   <div class="tab-content">
-   <div id="tab-settings" class="tab-pane active">
-    <div class="input-group">
-     <label style="margin-right: 5px;">Gamemode:</label>
-     <select id="gamemode">
-      <option value="0">Survival</option>
-      <option value="1">Creative</option>
-      <option value="2">Adventure</option>
-      <option value="3">Spectator</option>
-     </select>
-    </div>
-    <label style="cursor: pointer;"><input type="checkbox" id="cheats"> Cheats</label>
-    <div class="separator"></div>
-    <button onclick="openModal('achievements-modal')">🏆 Manage Achievements</button>
+   
+    <div id="tab-insert" class="tab-pane active">
+        <div class="ribbon-group">
+            <div class="ribbon-group-content">
+                <button class="ribbon-btn-large" onclick="activatePasteMode()" title="Paste (Ctrl+V)">
+                    <span class="icon">📋</span>
+                    <span class="text">Paste</span>
+                </button>
+                <div class="ribbon-btn-col">
+                    <button class="ribbon-btn-small" onclick="cutSelection()" title="Cut (Ctrl+X)"><span>✂️</span></button>
+                    <button class="ribbon-btn-small" onclick="copySelection()" title="Copy (Ctrl+C)"><span>📄</span></button>
+                </div>
+            </div>
+            <div class="ribbon-group-label">Clipboard</div>
+        </div>
+        <div class="separator"></div>
+		
+        <div class="ribbon-group">
+            <div class="ribbon-group-content" style="gap: 8px;">
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 12px;">Size</label>
+                        <select id="tool-size-select" onchange="updateToolSize(this.value)" style="width: 40px; text-align: center; padding: 1px; border: 1px solid #555;">
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                            <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option>
+                        </select>
+                    </div>
+                    <label style="font-size: 12px; cursor: pointer; display: flex; align-items: center; ">
+                        <input type="checkbox" id="tool-rounded-checkbox" onchange="updateToolRounded(this.checked)" style="margin-right: 4px;"> Rounded
+                    </label>
+                </div>
+                <button class="ribbon-btn-large" id="btn-tool-spray" onclick="toggleSpray(this)" title="Toggle Spray Mode">
+                    <img src="assets/tool_spray.png" class="pixel-icon" style="width: 32px; height: 32px; margin: 0 auto;">
+                    <span class="text">Spray</span>
+                </button>
+            </div>
+            <div class="ribbon-group-label">Brush Settings</div>
+        </div>
+        <div class="separator"></div>
+
+        <div class="ribbon-group">
+            <div class="ribbon-group-content">
+                <div id="hotbar-container"></div>
+            </div>
+            <div class="ribbon-group-label">Inventory (E)</div>
+        </div>
+        <div class="separator"></div>
+        
+        <div class="ribbon-group">
+            <div class="ribbon-group-content">
+				<button id="btn-save-struct" class="icon-btn" onclick="openSaveStructureModal()" disabled title="Select an area first" style="flex-direction:column; height:auto; border:none;">
+                    <span style="font-size:20px;">💾</span>
+                    <span class="text" style="font-size: 12px; line-height: 1; text-align: center;">Save<br>Structure</span>
+                </button>
+                <div id="recent-structures-ribbon" style="display: flex; align-items: center;"><span style="font-size: 10px; color: #555;">Empty</span></div>
+                <button class="ribbon-btn-small" onclick="openStructuresModal()" title="Open Library / See All" style="margin-left: 1px; height: 66px; width: 20px; background: #999; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size:14px; font-weight: bold; color: #333;">»</span>
+                </button>
+            </div>
+            <div class="ribbon-group-label">Structures (R)</div>
+        </div>
    </div>
-   <div id="tab-view" class="tab-pane">
-    <label><input type="checkbox" id="show-grid" onchange="toggleGrid(this.checked)"> Show Grid</label>
-    <div class="separator"></div>
-    <div class="input-group">
-        <label style="margin-right: 5px;">Dimension:</label>
-        <select id="dimension">
-         <option value="1">Overworld</option>
-         <option value="2">Nether</option>
-         <option value="3">End</option>
-        </select>
+
+    <div id="tab-settings" class="tab-pane">
+        <div class="ribbon-group">
+            <div class="ribbon-group-content" style="flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px;">
+                <div class="input-group">
+                    <label style="margin-right: 5px; font-size: 12px;">Gamemode:</label>
+                    <select id="gamemode" style="padding: 2px;">
+                        <option value="0">Survival</option><option value="1">Creative</option>
+                        <option value="2">Adventure</option><option value="3">Spectator</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <label style="cursor: pointer; font-size: 12px;"><input type="checkbox" id="cheats"> Cheats</label>
+                    <label style="cursor: pointer; font-size: 12px; color: #ff5555; font-weight: bold;"><input type="checkbox" id="hardcore" onchange="toggleHardcore(this.checked)"> Hardcore</label>
+                </div>
+            </div>
+            <div class="ribbon-group-label">World Settings</div>
+        </div>
+        <div class="separator"></div>
+
+        <div class="ribbon-group">
+            <div class="ribbon-group-content">
+                <button class="ribbon-btn-large" onclick="openModal('achievements-modal')">
+                    <span class="icon">🏆</span>
+                    <span class="text">Manage</br>Achievs.</span>
+                </button>
+            </div>
+            <div class="ribbon-group-label">Achievements</div>
+        </div>
     </div>
-   </div>
-  </div>
- </div>
+
+    <div id="tab-view" class="tab-pane">
+        <div class="ribbon-group">
+            <div class="ribbon-group-content" style="flex-direction: column; justify-content: center; gap: 2px;">
+                <img src="assets/Grid.png" class="icon-img" alt="Grid">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                    <input type="checkbox" id="show-grid" onchange="toggleGrid(this.checked)"> Show Grid
+                </label>
+            </div>
+            <div class="ribbon-group-label">Grid</div>
+        </div>
+        <div class="separator"></div>
+
+        <div class="ribbon-group">
+            <div class="ribbon-group-content">
+                <button class="ribbon-btn-large" onclick="openModal('dimensions-modal')">
+                    <img id="current-dim-icon" src="assets/Underworld icon.png" class="icon-img" alt="Dim">
+                    <span class="text">Change</br>Dimension</span>
+                </button>
+            </div>
+            <div class="ribbon-group-label">Dimensions</div>
+        </div>
+    </div>
+
+  </div> </div>
 
  <div id="toolbar-sidebar">
-    <button class="tool-btn active" id="tool-pencil" onclick="selectTool('pencil')" title="Lápiz">✏️</button>
-    <button class="tool-btn" id="tool-eraser" onclick="selectTool('eraser')" title="Borrador">🧼</button>
-    <button class="tool-btn" id="tool-bucket" onclick="selectTool('bucket')" title="Bote de Pintura">🪣</button>
-	<button class="tool-btn" id="tool-select" onclick="selectTool('select')" title="Seleccionar">🔳</button>
+    <button class="tool-btn active" id="tool-pencil" onclick="selectTool('pencil')" title="Pencil">✏️</button>
+    <button class="tool-btn" id="tool-eraser" onclick="selectTool('eraser')" title="Eraser">🧼</button>
+    <button class="tool-btn" id="tool-bucket" onclick="selectTool('bucket')" title="Bucket">🪣</button>
+	<button class="tool-btn" id="tool-select" onclick="selectTool('select')" title="Select">🔳</button>
+    <button class="tool-btn" id="tool-lasso" onclick="selectTool('lasso')" title="Free form">➰</button>
     <button class="tool-btn" id="tool-eyedropper" onclick="selectTool('eyedropper')" title="Gotero">💧</button>
-    
     <div class="separator" style="width: 80%; height: 1px; background: #444; margin: 5px 0;"></div>
-    
-    <button class="tool-btn" onclick="takeScreenshot()" title="Screenshot visible">📷</button>
-    <button class="tool-btn" onclick="toggleConsole()" title="Teletransportar">📍</button>
+    <button class="tool-btn" onclick="takeScreenshot()" title="Screenshot">📷</button>
+    <button class="tool-btn" onclick="toggleConsole()" title="Teletransportation">📍</button>
  </div>
 
  <div id="workspace">
   <div id="coords-overlay">X: 0 Y: 0</div>
-
+  <div id="selection-overlay">W: 0 H: 0</div>
   <div id="zoom-floating">
     <label for="zoom-slider">Zoom</label>
     <input type="range" id="zoom-slider" min="0" max="4" step="1" value="2" oninput="updateZoomSlider(this.value)">
     <span id="zoom-value">100%</span>
   </div>
-  
-  <div id="console-overlay" style="display: none;">
+  <div id="console-overlay">
       <div class="console-container">
-          <div id="console-suggestion">/tp [x] [y]</div>
-          <input type="text" id="console-input" placeholder="Escribe comando...">
+          <h3 style="margin: 0 0 10px 0; color: white;">Teleport</h3>
+          <div id="console-suggestion">Format: /tp [x] [y]</div>
+          <input type="text" id="console-input" placeholder="/tp 100 50">
+          <div style="font-size: 10px; color: #666; margin-top: 5px;">Press Enter to go</div>
       </div>
   </div>
-
   <canvas id="canvas"></canvas>
  </div>
 
  <div id="settings-modal" class="modal">
-    <div class="modal-content" style="width: 400px;">
-        <span class="close-modal" onclick="closeModal('settings-modal')">&times;</span>
-        <h2>Settings</h2>
-        <div class="settings-row">
-            <label>Theme</label>
-            <select id="theme-select" onchange="setTheme(this.value)">
-                <option value="dark">⚫ Dark (Default)</option>
-                <option value="white">⚪ White</option>
-                <option value="pastel">🌸 Pastel</option>
-                <option value="darkblue">🔵 Dark Blue</option>
+    <div class="modal-content mbw-standard-modal" style="width: 400px;">
+        <div class="mbw-modal-header">
+            <h3>Configuration</h3>
+            <span class="mbw-close-btn" onclick="closeModal('settings-modal')">&times;</span>
+        </div>
+        <div class="mbw-modal-body">
+            <div class="settings-row">
+                <label>Theme</label>
+                <select id="theme-select" onchange="setTheme(this.value)">
+                    <option value="dark">⚫ Dark (Default)</option>
+                    <option value="white">⚪ White</option>
+                    <option value="pastel">🌸 Pastel</option>
+                    <option value="darkblue">🔵 Dark Blue</option>
+                </select>
+            </div>
+        </div>
+    </div>
+ </div>
+
+ <div id="inventory-modal" class="modal">
+    <div class="modal-content">
+        <div class="inventory-layout">
+            <div class="inventory-main-area">
+                <div class="inv-header">
+                    <h3 style="color:gray;">Inventory</h3>
+                    <span class="close-modal" onclick="closeModal('inventory-modal')" style="cursor:pointer; font-weight:bold; color:black;">&times;</span>
+                </div>
+                <input type="text" id="inventory-search" placeholder="Search..." oninput="filterInventory(this.value)">
+                <div id="inventory-tabs-sidebar"></div>
+                <div id="inventory-grid"></div>
+            </div>
+        </div>
+    </div>
+ </div>
+ 
+ <div id="structures-modal" class="modal">
+    <div class="modal-content">
+        <div class="struct-main">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                <h3 style="margin:0; color:gray;">Structures Browser</h3>
+                <span class="close-modal" onclick="closeModal('structures-modal')" style="color:black;">&times;</span>
+            </div>
+            
+            <div class="struct-tabs-container">
+                <div class="struct-tabs">
+                    <div id="tab-struct-saved" class="struct-tab" onclick="filterStructures('saved')">Saved</div>
+                    <div id="tab-struct-vanilla" class="struct-tab active" onclick="filterStructures('vanilla')">Vanilla</div>
+                    <div id="tab-struct-community" class="struct-tab" onclick="filterStructures('community')">Community</div>
+                </div>
+                <div id="struct-saved-actions" style="display: none; gap: 5px;">
+                    <button class="mini-btn btn-import" onclick="importStructures()" title="Import JSON">📥 Import</button>
+                    <button class="mini-btn btn-export" onclick="exportSavedStructures()" title="Export JSON">📤 Export</button>
+                    <button class="mini-btn btn-reset" onclick="resetSavedStructures()" title="Delete All Saved">🗑️ Reset</button>
+                </div>
+            </div>
+
+            <div id="struct-subtabs">
+                <div id="subtab-house" class="struct-subtab active" onclick="filterSubCategory('house')">House</div>
+                <div id="subtab-pixelart" class="struct-subtab" onclick="filterSubCategory('pixelart')">Pixel Art</div>
+                <div id="subtab-vehicle" class="struct-subtab" onclick="filterSubCategory('vehicle')">Vehicle</div>
+                <div id="subtab-structure" class="struct-subtab" onclick="filterSubCategory('structure')">Structure</div>
+                <div id="subtab-chests" class="struct-subtab" onclick="filterSubCategory('chests')">Chests</div>
+                <div id="subtab-other" class="struct-subtab" onclick="filterSubCategory('other')">Other</div>
+            </div>
+            <div id="structures-grid"></div>
+        </div>
+<div class="struct-sidebar">
+            <h4 style="margin-top:0; color:gray;">Preview</h4>
+            <canvas id="struct-preview-canvas" width="200" height="200"></canvas>
+            
+            <div class="struct-info">
+                <h3 id="struct-info-title">Select an item</h3>
+                <p>Author: <span id="struct-info-author" style="font-weight:normal;">-</span></p>
+                <p>Category: <span id="struct-info-sub" style="font-weight:normal;">-</span></p>
+            </div>
+
+            <div class="struct-actions-container">
+                <button class="btn-load-struct" onclick="loadStructureToClipboard()">Load Structure</button>
+                <div id="struct-edit-actions" class="struct-actions-row">
+                    <button class="btn-action-text btn-edit-action" onclick="openEditInfoModal()" title="Edit Info"><span>✏️</span> Edit</button>
+                    <button class="btn-action-text btn-delete-action" onclick="deleteSavedStructure()" title="Delete"><span>🗑️</span> Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+<div id="save-structure-modal" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 5px;">
+            <h3 style="margin: 0; text-align: center; color: black;">Save New Structure</h3>
+            <span class="close-modal" onclick="closeModal('save-structure-modal')" style="position: absolute; right: 0; top: -2px; cursor:pointer; font-weight:bold; color:black; font-size: 20px; line-height: 1;">&times;</span>
+        </div>
+        <canvas id="struct-save-preview" width="460" height="295"></canvas>
+        <div class="save-form-row">
+            <label>Title</label>
+            <input type="text" id="input-struct-title" placeholder="e.g. My Castle">
+        </div>
+        <div class="save-form-row">
+            <label>Author</label>
+            <input type="text" id="input-struct-author" placeholder="Your Name">
+        </div>
+        <div class="save-form-row" style="display: none;">
+            <label>Category</label>
+            <input type="text" id="input-struct-category" value="saved" readonly>
+        </div>
+        <div class="save-form-row">
+            <label>Tag</label>
+            <select id="input-struct-subcategory">
+                <option value="House">House</option>
+                <option value="Structure">Structure</option>
+                <option value="PixelArt">Pixel Art</option>
+                <option value="Vehicle">Vehicle</option>
+                <option value="Chests">Chests</option>
+                <option value="Other" selected>Other</option>
             </select>
+        </div>
+        <div class="save-actions">
+            <button class="btn-cancel" onclick="closeModal('save-structure-modal')">Cancel</button>
+            <button class="btn-confirm-save" onclick="saveNewStructure()">Save</button>
         </div>
     </div>
  </div>
 
  <div id="achievements-modal" class="modal">
-  <div class="modal-content">
-   <span class="close-modal" onclick="closeModal('achievements-modal')">&times;</span>
-   <h2>Achievements Manager</h2>
-   <div class="modal-actions">
-    <button onclick="toggleAchievements(true)">Unlock All</button>
-    <button onclick="toggleAchievements(false)">Reset All</button>
+  <div class="modal-content mbw-standard-modal" style="width: 500px; height: 500px;">
+   <div class="mbw-modal-header">
+       <h3>Achievements Manager</h3>
+       <span class="mbw-close-btn" onclick="closeModal('achievements-modal')">&times;</span>
    </div>
-<div id="achievements-list">
-    <label><input type="checkbox" data-index="44"> Breed two animals</label>
-    <label><input type="checkbox" data-index="43"> Brew a potion</label>
-    <label><input type="checkbox" data-index="3"> Craft a crafting table</label>
-    <label><input type="checkbox" data-index="5"> Craft a stone pickaxe</label>
-    <label><input type="checkbox" data-index="4"> Craft a wooden pickaxe</label>
-    <label><input type="checkbox" data-index="6"> Craft an iron pickaxe</label>
-    <label><input type="checkbox" data-index="22"> Defeat a flaming chicken</label>
-    <label><input type="checkbox" data-index="25"> Eat some food</label>
-    <label><input type="checkbox" data-index="45"> Enchant an item</label>
-    <label><input type="checkbox" data-index="33"> Fire a bow</label>
-    <label><input type="checkbox" data-index="39"> Fish a fish</label>
-    <label><input type="checkbox" data-index="23"> Grow a farm</label>
-    <label><input type="checkbox" data-index="10"> Grow a tree</label>
-    <label><input type="checkbox" data-index="24"> Make a cake</label>
-    <label><input type="checkbox" data-index="7"> Make a furnace</label>
-    <label><input type="checkbox" data-index="8"> Make an iron ingot</label>
-    <label><input type="checkbox" data-index="30"> Make portal stone</label>
-    <label><input type="checkbox" data-index="9"> Make some torches</label>
-    <label><input type="checkbox" data-index="0"> Mine a block of wood</label>
-    <label><input type="checkbox" data-index="29"> Mine diamonds</label>
-    <label><input type="checkbox" data-index="28"> Mine gold</label>
-    <label><input type="checkbox" data-index="27"> Mine obsidian</label>
-    <label><input type="checkbox" data-index="32"> Open a door with wiring</label>
-    <label><input type="checkbox" data-index="2"> Open the inventory</label>
-    <label><input type="checkbox" data-index="1"> Place a block</label>
-    <label><input type="checkbox" data-index="19"> Slay a blaze</label>
-    <label><input type="checkbox" data-index="13"> Slay a cow</label>
-    <label><input type="checkbox" data-index="21"> Slay a creeper</label>
-    <label><input type="checkbox" data-index="42"> Slay a ghast by its fireball</label>
-    <label><input type="checkbox" data-index="38"> Slay a magma cube</label>
-    <label><input type="checkbox" data-index="18"> Slay a nethereye</label>
-    <label><input type="checkbox" data-index="12"> Slay a pig</label>
-    <label><input type="checkbox" data-index="14"> Slay a sheep</label>
-    <label><input type="checkbox" data-index="16"> Slay a skeleton</label>
-    <label><input type="checkbox" data-index="37"> Slay a slime</label>
-    <label><input type="checkbox" data-index="17"> Slay a spider</label>
-    <label><input type="checkbox" data-index="15"> Slay a zombie</label>
-    <label><input type="checkbox" data-index="41"> Slay a zombie pigman</label>
-    <label><input type="checkbox" data-index="20"> Slay an enderman</label>
-    <label><input type="checkbox" data-index="36"> Slay the ender dragon</label>
-    <label><input type="checkbox" data-index="11"> Tame a dog</label>
-    <label><input type="checkbox" data-index="34"> Teleport with enderpearl</label>
-    <label><input type="checkbox" data-index="31"> Travel to the nether</label>
-    <label><input type="checkbox" data-index="35"> Unlock the ender portal</label>
-    <label><input type="checkbox" data-index="26"> Use a bed</label>
-    <label><input type="checkbox" data-index="40"> Use an anvil</label>
-</div>
+   <div class="mbw-modal-body" style="display: flex; flex-direction: column;">
+       <div class="modal-actions" style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+        <button class="mini-btn btn-import" onclick="toggleAchievements(true)">Unlock All</button>
+        <button class="mini-btn btn-reset" onclick="toggleAchievements(false)">Reset All</button>
+       </div>
+       <div id="achievements-list" style="overflow-y: auto; flex: 1; border: 2px solid #373737; background: #8B8B8B; padding: 5px;">
+        <label><input type="checkbox" data-index="44"> Breed two animals</label>
+        <label><input type="checkbox" data-index="43"> Brew a potion</label>
+        <label><input type="checkbox" data-index="3"> Craft a crafting table</label>
+        <label><input type="checkbox" data-index="5"> Craft a stone pickaxe</label>
+        <label><input type="checkbox" data-index="4"> Craft a wooden pickaxe</label>
+        <label><input type="checkbox" data-index="6"> Craft an iron pickaxe</label>
+        <label><input type="checkbox" data-index="22"> Defeat a flaming chicken</label>
+        <label><input type="checkbox" data-index="25"> Eat some food</label>
+        <label><input type="checkbox" data-index="45"> Enchant an item</label>
+        <label><input type="checkbox" data-index="33"> Fire a bow</label>
+        <label><input type="checkbox" data-index="39"> Fish a fish</label>
+        <label><input type="checkbox" data-index="23"> Grow a farm</label>
+        <label><input type="checkbox" data-index="10"> Grow a tree</label>
+        <label><input type="checkbox" data-index="24"> Make a cake</label>
+        <label><input type="checkbox" data-index="7"> Make a furnace</label>
+        <label><input type="checkbox" data-index="8"> Make an iron ingot</label>
+        <label><input type="checkbox" data-index="30"> Make portal stone</label>
+        <label><input type="checkbox" data-index="9"> Make some torches</label>
+        <label><input type="checkbox" data-index="0"> Mine a block of wood</label>
+        <label><input type="checkbox" data-index="29"> Mine diamonds</label>
+        <label><input type="checkbox" data-index="28"> Mine gold</label>
+        <label><input type="checkbox" data-index="27"> Mine obsidian</label>
+        <label><input type="checkbox" data-index="32"> Open a door with wiring</label>
+        <label><input type="checkbox" data-index="2"> Open the inventory</label>
+        <label><input type="checkbox" data-index="1"> Place a block</label>
+        <label><input type="checkbox" data-index="19"> Slay a blaze</label>
+        <label><input type="checkbox" data-index="13"> Slay a cow</label>
+        <label><input type="checkbox" data-index="21"> Slay a creeper</label>
+        <label><input type="checkbox" data-index="42"> Slay a ghast by its fireball</label>
+        <label><input type="checkbox" data-index="38"> Slay a magma cube</label>
+        <label><input type="checkbox" data-index="18"> Slay a nethereye</label>
+        <label><input type="checkbox" data-index="12"> Slay a pig</label>
+        <label><input type="checkbox" data-index="14"> Slay a sheep</label>
+        <label><input type="checkbox" data-index="16"> Slay a skeleton</label>
+        <label><input type="checkbox" data-index="37"> Slay a slime</label>
+        <label><input type="checkbox" data-index="17"> Slay a spider</label>
+        <label><input type="checkbox" data-index="15"> Slay a zombie</label>
+        <label><input type="checkbox" data-index="41"> Slay a zombie pigman</label>
+        <label><input type="checkbox" data-index="20"> Slay an enderman</label>
+        <label><input type="checkbox" data-index="36"> Slay the ender dragon</label>
+        <label><input type="checkbox" data-index="11"> Tame a dog</label>
+        <label><input type="checkbox" data-index="34"> Teleport with enderpearl</label>
+        <label><input type="checkbox" data-index="31"> Travel to the nether</label>
+        <label><input type="checkbox" data-index="35"> Unlock the ender portal</label>
+        <label><input type="checkbox" data-index="26"> Use a bed</label>
+        <label><input type="checkbox" data-index="40"> Use an anvil</label>
+       </div>
+   </div> 
   </div>
  </div>
+ 
+ <div id="dimensions-modal" class="modal">
+    <div class="modal-content" style="width: 550px; height: auto;">
+        <span class="close-modal" onclick="closeModal('dimensions-modal')">&times;</span>
+        <h3 style="color:gray; margin-top: 0;">Select Dimension</h3>
+        <div class="dimensions-grid">
+            <div class="dim-item" onclick="changeDimension(1)">
+                <img src="assets/underworld icon.png" class="dim-preview"><span class="dim-name">Overworld</span> 
+            </div>
+            <div class="dim-item" onclick="changeDimension(2)">
+                <img src="assets/nether icon.png" class="dim-preview"><span class="dim-name">Nether</span>
+            </div>
+            <div class="dim-item" onclick="changeDimension(3)">
+                <img src="assets/end icon.png" class="dim-preview"><span class="dim-name">End</span>
+            </div>
+        </div>
+    </div>
+</div>
 
  <input type="file" id="file-input" accept=".mbw" style="display: none;">
+ <input type="file" id="import-struct-input" accept=".json" style="display: none;" onchange="handleImportFile(this)">
 
+ <div id="edit-info-modal" class="modal" style="z-index: 2500;">
+    <div class="modal-content mbw-standard-modal" style="width: 500px; height: auto;">
+        <div class="mbw-modal-header">
+            <h3>Edit Structure Info</h3>
+            <span class="mbw-close-btn" onclick="closeModal('edit-info-modal')">&times;</span>
+        </div>
+        <div class="mbw-modal-body">
+            <div class="save-form-row">
+                <label>Title</label>
+                <input type="text" id="edit-struct-title">
+            </div>
+            <div class="save-form-row">
+                <label>Author</label>
+                <input type="text" id="edit-struct-author">
+            </div>
+            <div class="save-form-row">
+                <label>Tag</label>
+                <select id="edit-struct-subcategory">
+                    <option value="House">House</option>
+                    <option value="Structure">Structure</option>
+                    <option value="PixelArt">Pixel Art</option>
+                    <option value="Vehicle">Vehicle</option>
+                    <option value="Chests">Chests</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="save-actions">
+                <button class="btn-cancel" onclick="closeModal('edit-info-modal')">Cancel</button>
+                <button class="btn-confirm-save" onclick="saveEditedInfo()">Update</button>
+            </div>
+        </div>
+    </div>
+ </div>
+
+ <div id="custom-confirm-modal" class="modal" style="z-index: 3000;">
+    <div class="modal-content mbw-standard-modal" style="width: 350px;">
+        <div class="mbw-modal-header">
+            <h3>Confirm Action</h3>
+            <span class="mbw-close-btn" onclick="closeModal('custom-confirm-modal')">&times;</span>
+        </div>
+        <div class="mbw-modal-body" style="text-align: center;">
+            <p id="confirm-msg" style="margin: 10px 0; font-weight: bold;">Are you sure?</p>
+            <div class="confirm-actions">
+                <button class="btn-yes" id="btn-confirm-yes" style="width: 80px;">Yes</button>
+                <button class="btn-no" onclick="closeModal('custom-confirm-modal')" style="width: 80px;">No</button>
+            </div>
+        </div>
+    </div>
+ </div>
+ 
+ <script>
+    function toggleSpray(btn) {
+        btn.classList.toggle('active');
+        const isActive = btn.classList.contains('active');
+        if (typeof updateToolSpray === 'function') {
+            updateToolSpray(isActive);
+        } else {
+            console.warn("updateToolSpray function not found");
+        }
+    }
+ </script>
+ 
  <script src="scripts/ui-handler.js"></script>
  <script src="scripts/mbwom.js"></script>
  <script src="scripts/mbw-algorithm.js"></script>
@@ -181,5 +618,8 @@
  <script src="scripts/clipboard.js"></script>
  <script src="main.js"></script>
  <script src="scripts/tools.js"></script>
+<script src="scripts/structures.js"></script>
+ <script src="scripts/audio-manager.js"></script> </body>
+</html>
 </body>
 </html>

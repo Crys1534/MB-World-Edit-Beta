@@ -25,13 +25,23 @@ let showGrid = false;
 const grid = { width: 60, height: 30 };
 let tileSize = BASE_TILE_SIZE;
 
-const images = { names: ["blocks", "hotbar", "slot"] }
-images.names.forEach((name) => {
-    images[name] = new Image;
-    images[name].src = `assets/${name}.png`;
+// --- IMÁGENES GLOBALES ---
+window.images = { names: ["blocks", "hotbar", "slot"] };
+
+window.images.names.forEach((name) => {
+    window.images[name] = new Image();
+    window.images[name].src = `assets/${name}.png`;
+    
+    window.images[name].onload = () => {
+        worldDirty = true;
+        const structCanvas = document.getElementById('struct-preview-canvas');
+        if (structCanvas && structCanvas.offsetParent !== null) {
+            // Opcional: refresco de preview
+        }
+    };
 });
 
-// Velocidad fija en 1 para evitar decimales
+// Velocidad fija en 1
 const camera = { x: 0, y: 148, speed: 1 }
 
 function resizeCanvas() {
@@ -59,11 +69,12 @@ function updateGridDimensions() {
     grid.width = Math.ceil(canvas.width / tileSize);
     grid.height = Math.ceil(canvas.height / tileSize);
     
-    // --- CAMBIO: Velocidad Fija y Estable ---
-    camera.speed = 1; 
-
-    // --- CAMBIO: Corregir posiciones decimales residuales ---
-    // Si la cámara quedó en 10.5, la redondeamos a 11 para evitar errores
+    // CAMBIO AQUÍ:
+    // Antes: camera.speed = 1;
+    // Ahora: La velocidad se ajusta para mantener una sensación constante
+    // (Más lento con zoom in, más rápido con zoom out)
+    camera.speed = 100 / currentZoom; 
+    
     camera.x = Math.round(camera.x);
     camera.y = Math.round(camera.y);
 
@@ -130,7 +141,9 @@ function renderBlock(x, y) {
 }
 
 function drawBlock(texture, values, targetCtx = ctx) {
-    targetCtx.drawImage(images.blocks, texture.x, texture.y, 16, 16, values.x, values.y, values.width, values.height);
+    if (window.images.blocks && window.images.blocks.complete && window.images.blocks.naturalWidth !== 0) {
+        targetCtx.drawImage(window.images.blocks, texture.x, texture.y, 16, 16, values.x, values.y, values.width, values.height);
+    }
 }
 
 function renderWorldToBuffer() {
@@ -139,7 +152,6 @@ function renderWorldToBuffer() {
 
     for (let x = 0; x < grid.width; x++) {
         for (let y = 0; y < grid.height; y++) {
-            // Aseguramos enteros (aunque con speed=1 ya debería serlo)
             const currentX = Math.floor(x + camera.x);
             const currentY = Math.floor(y + camera.y);
             
@@ -202,12 +214,61 @@ function getBlockObject(states) {
 function drawUI() {
     const coordsDiv = document.getElementById('coords-overlay');
     if (coordsDiv) {
-        // Redondeo explícito para la visualización
         coordsDiv.innerText = `X: ${Math.floor(mouse.worldX)} Y: ${Math.floor(mouse.worldY)}`;
     }
     
+    // --- CURSOR INTELIGENTE (Contorno Limpio) ---
     if (currentTool !== 'paste' && currentTool !== 'select' && currentTool !== 'lasso') {
-        drawBlock({ x: 0, y: 3232 }, { x: mouse.alignedX, y: mouse.alignedY, width: tileSize, height: -tileSize });
+        const size = (typeof toolSize !== 'undefined') ? toolSize : 1;
+        const range = size - 1;
+        
+        ctx.strokeStyle = "#4DA6FF"; // Celeste
+        ctx.lineWidth = 2;
+        ctx.fillStyle = "rgba(77, 166, 255, 0.2)"; // Relleno suave
+
+        const isInside = (dx, dy) => {
+             if (typeof toolRounded !== 'undefined' && toolRounded && size > 1) {
+                 return (dx*dx + dy*dy) <= (range * range + 0.1);
+             }
+             return dx >= -range && dx <= range && dy >= -range && dy <= range;
+        };
+
+        ctx.beginPath();
+        for (let dx = -range; dx <= range; dx++) {
+            for (let dy = -range; dy <= range; dy++) {
+                if (isInside(dx, dy)) {
+                    const absX = mouse.worldX + dx;
+                    const absY = mouse.worldY + dy;
+                    const drawX = (absX - camera.x) * tileSize;
+                    const drawY = canvas.height - (absY - camera.y) * tileSize;
+                    
+                    ctx.fillRect(drawX, drawY, tileSize, -tileSize);
+                }
+            }
+        }
+
+        ctx.beginPath();
+        for (let dx = -range; dx <= range; dx++) {
+            for (let dy = -range; dy <= range; dy++) {
+                if (isInside(dx, dy)) {
+                    const absX = mouse.worldX + dx;
+                    const absY = mouse.worldY + dy;
+                    const drawX = (absX - camera.x) * tileSize;
+                    const drawY = canvas.height - (absY - camera.y) * tileSize; 
+
+                    const left = drawX;
+                    const right = drawX + tileSize;
+                    const bottom = drawY; 
+                    const top = drawY - tileSize;
+
+                    if (!isInside(dx + 1, dy)) { ctx.moveTo(right, bottom); ctx.lineTo(right, top); }
+                    if (!isInside(dx - 1, dy)) { ctx.moveTo(left, bottom); ctx.lineTo(left, top); }
+                    if (!isInside(dx, dy + 1)) { ctx.moveTo(left, top); ctx.lineTo(right, top); }
+                    if (!isInside(dx, dy - 1)) { ctx.moveTo(left, bottom); ctx.lineTo(right, bottom); }
+                }
+            }
+        }
+        ctx.stroke(); 
     }
 
     if (currentTool === 'paste' && window.clipboard) {
@@ -236,25 +297,35 @@ function drawUI() {
         ctx.strokeRect(startScreenX, startScreenY, window.clipboard.width * tileSize, -(window.clipboard.height * tileSize));
     }
 
-    if (window.selection.type === 'rect' && window.selection.p1 && window.selection.p2) {
-        const minX = Math.min(window.selection.p1.x, window.selection.p2.x);
-        const maxX = Math.max(window.selection.p1.x, window.selection.p2.x);
-        const minY = Math.min(window.selection.p1.y, window.selection.p2.y);
-        const maxY = Math.max(window.selection.p1.y, window.selection.p2.y);
+    // --- SELECCIONES MÚLTIPLES (Rect) ---
+    if (window.selection.type === 'rect') {
+        // Combinamos la selección actual (p1, p2) con las guardadas (subRects)
+        const rectsToDraw = [...window.selection.subRects];
+        if (window.selection.p1 && window.selection.p2) {
+            rectsToDraw.push({ p1: window.selection.p1, p2: window.selection.p2 });
+        }
 
-        const screenX = (minX - camera.x) * tileSize;
-        const screenY = canvas.height - (minY - camera.y) * tileSize;
-        const screenW = (maxX - minX + 1) * tileSize;
-        const screenH = -(maxY - minY + 1) * tileSize;
+        rectsToDraw.forEach(r => {
+            const minX = Math.min(r.p1.x, r.p2.x);
+            const maxX = Math.max(r.p1.x, r.p2.x);
+            const minY = Math.min(r.p1.y, r.p2.y);
+            const maxY = Math.max(r.p1.y, r.p2.y);
 
-        ctx.fillStyle = "rgba(0, 255, 255, 0.2)"; 
-        ctx.fillRect(screenX, screenY, screenW, screenH);
+            const screenX = (minX - camera.x) * tileSize;
+            const screenY = canvas.height - (minY - camera.y) * tileSize;
+            const screenW = (maxX - minX + 1) * tileSize;
+            const screenH = -(maxY - minY + 1) * tileSize;
 
-        ctx.strokeStyle = "#87CEFA";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(screenX, screenY, screenW, screenH);
+            ctx.fillStyle = "rgba(0, 255, 255, 0.2)"; 
+            ctx.fillRect(screenX, screenY, screenW, screenH);
+
+            ctx.strokeStyle = "#87CEFA";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(screenX, screenY, screenW, screenH);
+        });
     }
     
+    // --- POLY (Lasso) ---
     if (window.selection.type === 'poly' && window.selection.path.length > 0) {
         ctx.strokeStyle = "#FFD700";
         ctx.lineWidth = 2;
@@ -290,12 +361,33 @@ function mainLoop() {
     requestAnimationFrame(mainLoop);
 }
 
-document.getElementById("dimension").addEventListener("change", function () {
-    if (mbwom.world) {
-        const sceneIndex = parseInt(this.value);
+function changeDimension(sceneIndex) {
+    if (typeof mbwom !== 'undefined' && mbwom.world) {
+        // Verificar si la escena existe (scene1, scene2, scene3)
         if (mbwom.world["scene" + sceneIndex]) {
             mbwom.loadScene(sceneIndex);
-            initializeWorldCache();
+            initializeWorldCache(); // Recargar caché visual
+            closeModal('dimensions-modal'); // Cerrar el modal
+            
+            // --- ACTUALIZAR ICONO EN LA INTERFAZ ---
+            const iconElement = document.getElementById('current-dim-icon');
+            if (iconElement) {
+                switch(sceneIndex) {
+                    case 1:
+                        iconElement.src = "assets/Underworld icon.png";
+                        break;
+                    case 2:
+                        iconElement.src = "assets/Nether icon.png";
+                        break;
+                    case 3:
+                        iconElement.src = "assets/End icon.png";
+                        break;
+                }
+            }
+            
+            console.log("Switched to dimension:", sceneIndex);
+        } else {
+            alert("This dimension is not generated in the current world.");
         }
     }
-});
+}
