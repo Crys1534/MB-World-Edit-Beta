@@ -9,80 +9,38 @@ const inventoryCategories = {
     // La pestaña "all" se llena automáticamente, no necesitas editar 'items' aquí.
     all: { icon: 'chest', items: [] }, 
 
-    // 🧱 CONSTRUCCIÓN: Bloques sólidos, piedras, maderas, minerales
-    building: { 
+    // 🧱 Blocks
+    Blocks: { 
         icon: 'bricks', 
         items: [
-            // Piedras y Tierras
-            'r', 'cs', 'ms', 'moss', 'br', 'bdr', 'ss', 'sd', 'gdt', 'clb',
-            // Maderas y Ladrillos
-            'wp', 'bricks', 'sb', 'nb', 'bbb', 'lgr', 
-            // Bloques de Minerales
-            'ib', 'gb', 'db', 'lapb', 'clore', 'in', 'gd', 'dmore', 'egem',
-            // Nether y End
-            'n', 'es', 'boneb', 'magma', 'soul_sand', 'glow', 'portalstone',
-            // Escaleras
-            'staircs', 'stairr', 'stairwp', 'stairbrick', 'stairsb', 'stairn', 
-            'stairib', 'stairgb', 'stairdb', 'stairob', 'stairbr', 'stairbbb',
-            // Medios Bloques (Slabs)
-            'halfcs', 'halfr', 'halfwp', 'halfbrick', 'halfsb', 'halfn',
-            'halfib', 'halfgb', 'halfdb', 'halfob', 'halfbr', 'halfbbb',
-            // Lanas (Colores)
-            'cloth_white', 'cloth_red', 'cloth_blue', 'cloth_green', 'cloth_yellow', 
-            'cloth_orange', 'cloth_purple', 'cloth_pink', 'cloth_cyan', 'cloth_gray', 
-            'cloth_lightgray', 'cloth_black', 'cloth_brown', 'cloth_magenta', 'cloth_lightblue', 'cloth_lightgreen',
-            // Cristales (Colores)
-            'gs', 'gs_white', 'gs_red', 'gs_blue', 'gs_green', 'gs_yellow',
-            'gs_orange', 'gs_purple', 'gs_pink', 'gs_cyan', 'gs_gray', 'gs_black'
+'br', 'bddt', 'dt', 'dt_1','farm', 'myc', 'gdt', 'cdt', 'bdr', 'r', 'bdcs', 'cs', 
+'ms', 'bdsb', 'sb', 'clore', 'in', 'gd', 'dmore', 'rs', 'os', 'lap',
+'to', 'egem', 'wd1', 'wd_1','wd_2', 'bdwp', 'wp', 'bdbbb', 'bbb', 'top', 'ib', 'gb', 
+'db', 'lapb', 'clb', 'sd', 'ss', 'cy1', 'bdbricks', 'bricks', 'bdbooks', 'books', 'b','snowblock', 
+'ice', 'fice', 'fice_1', 'fice_2', 'fice_3', 'fice_4', 'gv',  'cloth_white',  'cloth_lightgray',  'cloth_gray', 
+ 'cloth_black',  'cloth_brown',  'cloth_purple',  'cloth_magenta',  
+'cloth_red',  'cloth_orange', 'cloth_pink', 'cloth_yellow',  'cloth_lightgreen', 
+ 'cloth_green', 'cloth_cyan',  'cloth_lightblue', 'cloth_blue', 
+'cloth_rainbow', 'gs', 'gs_white', 'gs_lightgray', 'gs_gray', 'gs_black', 'gs_brown', 'gs_purple', 'gs_magenta', 
+'gs_redg', 'gs_orange', 'gs_pink', 'gs_yellow', 'gs_lightgreen', 'gs_green', 'gs_cyan', 'gs_lightblue', 'gs_blue', 'bdcloth_white', 'bdcloth_lightgray', 'bdcloth_gray', 'bdcloth_black', 'bdcloth_brown', 'bdcloth_purple', 'bdcloth_magenta', 'bdcloth_red', 'bdcloth_orange',  'bdcloth_pink', 'bdcloth_yellow', 'bdcloth_lightgreen', 'bdcloth_green', 'bdcloth_cyan', 'bdcloth_lightblue',  'bdcloth_blue', 'bdcloth_rainbow', 'bdgs', 'bdgs_white', 'bdgs_lightgray', 'bdgs_gray', 'bdgs_black', 'bdgs_brown', 'bdgs_purple', 'bdgs_magenta', 
+'bdgs_redg', 'bdgs_orange', 'bdgs_pink', 'bdgs_yellow', 'bdgs_lightgreen', 'bdgs_green', 'bdgs_cyan', 'bdgs_lightblue', 'bdgs_blue',
+
+
+
+
+
+
         ]
     },
 
-    // 🌿 NATURALEZA: Plantas, líquidos, cultivos, hielo
-    nature: { 
-        icon: 'gv', 
+    // 🌿 Deocrations
+    Decorations: { 
+        icon: 'shrub', 
         items: [
-            // Terreno
-            'gv', 'br', 'sand', 'gr', 'myc', 'snow', 'snowblock', 'ice', 'fice',
-            // Vegetación
-            'lv', 'shrub', 'flower', 'rose', 'mush', 'mush_red', 'cactus', 'web', 'coral', 'lp',
-            // Cultivos y Comida
-            'wheat', 'carrot', 'potato', 'seed', 'mel', 'pk', 'hay_1', 'cake', 
-            // Líquidos (Cubos)
-            'wr', 'la', 'ad'
+            'br',
         ]
     },
 
-    // 🧨 MECANISMOS: Redstone, TNT, Railes, Puertas
-    redstone: { 
-        icon: 'rsd', 
-        items: [
-            // Energía
-            'rsd', 'rstorch', 'block_redstone', 
-            // Actuadores
-            'piston', 'spiston', 'TNT', 'dispense', 'dropper', 'note', 'lamp', 'light',
-            // Entradas
-            'lever', 'button', 'pp', 'tripwire', 
-            // Railes
-            'rail', 'raila', 'raild', 'railp',
-            // Puertas y Trampillas
-            'door', 'iron_door', 'trapdoor', 'fncg'
-        ]
-    },
-
-    // 🛋️ DECORACIÓN: Muebles, utilidades, iluminación
-    decor: { 
-        icon: 'bed', 
-        items: [
-            // Utilidades
-            'craft', 'oven', 'chest', 'echest', 'anvil', 'enchant', 'brew', 'cauldron', 'j',
-            // Iluminación
-            'torch', 'lant', 'glow', 'sea_lantern',
-            // Mobiliario
-            'bed', 'books', 'sign', 'ladder', 'fnc', 'nfnc', 'ibar', 'glass_pane', 
-            // Alfombras
-            'carpet_white', 'carpet_red', 'carpet_blue', 'carpet_green'
-        ]
-    }
 };
 
 // =================================================================
@@ -324,4 +282,27 @@ function updateHotbarSelection() {
         if (i === slotIndex) s.classList.add('active');
         else s.classList.remove('active');
     });
+}
+
+// ==========================================
+// 🆕 LÓGICA DE MUNDO (HARDCORE)
+// ==========================================
+
+function toggleHardcore(isHardcore) {
+    const gmSelect = document.getElementById('gamemode');
+    const cheatsCheckbox = document.getElementById('cheats');
+    
+    if (isHardcore) {
+        // Guardar el estado anterior si quisieras restaurarlo (opcional)
+        // Forzar Survival (Valor 0)
+        gmSelect.value = "0"; 
+        gmSelect.disabled = true; // Bloquear selector
+        
+        // Opcional: Desactivar trucos en Hardcore por defecto
+        if(cheatsCheckbox) cheatsCheckbox.checked = false;
+        
+    } else {
+        // Reactivar selector
+        gmSelect.disabled = false;
+    }
 }
