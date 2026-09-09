@@ -1,6 +1,6 @@
 const canvas = document.getElementById("canvas");
-canvas.width = 960;
-canvas.height = 480;
+canvas.width = 1360;
+canvas.height = 680;
 
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
@@ -19,13 +19,14 @@ images.names.forEach((name) => {
 });
 
 const grid = {
- width: 60,
- height: 30
+ width: 85,
+ height: 42.5,
 }
 
 let tileSize = canvas.width / grid.width;
 
 const camera = { x: 0, y: 148, speed: 1 }
+let isTakingScreenshot = false; // Añade esta variable
 
 function initializeWorldCache() {
  window.worldCache = [];
@@ -111,8 +112,13 @@ function mainLoop() {
  mineAndPlace();
  drawBackgrond();
  drawWorld();
- drawUI();
- drawHotbar();
+ 
+ // Modificación: Solo dibujar la interfaz si no estamos tomando captura
+ if (!isTakingScreenshot) {
+  drawUI();
+  drawHotbar();
+ }
+ 
  requestAnimationFrame(mainLoop);
 }
 
